@@ -46,3 +46,11 @@ DEFAULT_ASSIST_TEXT_WEIGHT = 1.0
 ## Built-in theme: "default", "base", "monochrome", "soft", "glass"
 ## See https://huggingface.co/spaces/gradio/theme-gallery for more themes
 GRADIO_THEME = "NoCrypt/miku"
+
+# Output format
+DEFAULT_OUTPUT_FORMAT = "ogg_vorbis"
+DEFAULT_OUTPUT_FORMAT_DICT = {
+    "wav": "audio/wav",
+    "mp3": "audio/mp3",
+    "ogg_vorbis": "audio/ogg",
+}

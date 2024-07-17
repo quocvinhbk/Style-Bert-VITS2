@@ -31,6 +31,8 @@ from style_bert_vits2.constants import (
     DEFAULT_SPLIT_INTERVAL,
     DEFAULT_STYLE,
     DEFAULT_STYLE_WEIGHT,
+    DEFAULT_OUTPUT_FORMAT,
+    DEFAULT_OUTPUT_FORMAT_DICT,
     Languages,
 )
 from style_bert_vits2.logging import logger
@@ -55,10 +57,10 @@ update_dict()
 ## ここでロードしなくても必要になった際に自動ロードされるが、時間がかかるため事前にロードしておいた方が体験が良い
 bert_models.load_model(Languages.JP)
 bert_models.load_tokenizer(Languages.JP)
-bert_models.load_model(Languages.EN)
-bert_models.load_tokenizer(Languages.EN)
-bert_models.load_model(Languages.ZH)
-bert_models.load_tokenizer(Languages.ZH)
+# bert_models.load_model(Languages.EN)
+# bert_models.load_tokenizer(Languages.EN)
+# bert_models.load_model(Languages.ZH)
+# bert_models.load_tokenizer(Languages.ZH)
 
 
 def raise_validation_error(msg: str, param: str):
@@ -140,6 +142,7 @@ if __name__ == "__main__":
     async def voice(
         request: Request,
         text: str = Query(..., min_length=1, max_length=limit, description="セリフ"),
+        output_format: str = Query(DEFAULT_OUTPUT_FORMAT, description="output format"),
         encoding: str = Query(None, description="textをURLデコードする(ex, `utf-8`)"),
         model_name: str = Query(
             None,
@@ -197,6 +200,10 @@ if __name__ == "__main__":
             logger.warning(
                 "The GET method is not recommended for this endpoint due to various restrictions. Please use the POST method."
             )
+        if not output_format in DEFAULT_OUTPUT_FORMAT_DICT.keys():
+            raise_validation_error(
+                f"output_format={output_format} not found", "output_format"
+            )
         if model_id >= len(
             model_holder.model_names
         ):  # /models/refresh があるためQuery(le)で表現不可
@@ -204,7 +211,11 @@ if __name__ == "__main__":
 
         if model_name:
             # load_models() の 処理内容が i の正当性を担保していることに注意
-            model_ids = [i for i, x in enumerate(model_holder.models_info) if x.name == model_name]
+            model_ids = [
+                i
+                for i, x in enumerate(model_holder.models_info)
+                if x.name == model_name
+            ]
             if not model_ids:
                 raise_validation_error(
                     f"model_name={model_name} not found", "model_name"
@@ -215,7 +226,7 @@ if __name__ == "__main__":
                     f"model_name={model_name} is ambiguous", "model_name"
                 )
             model_id = model_ids[0]
-            
+
         model = loaded_models[model_id]
         if speaker_name is None:
             if speaker_id not in model.id2spk.keys():
@@ -253,7 +264,10 @@ if __name__ == "__main__":
         logger.success("Audio data generated and sent successfully")
         with BytesIO() as wavContent:
             wavfile.write(wavContent, sr, audio)
-            return Response(content=wavContent.getvalue(), media_type="audio/wav")
+            return Response(
+                content=wavContent.getvalue(),
+                media_type=DEFAULT_OUTPUT_FORMAT_DICT[output_format],
+            )
 
     @app.get("/models/info")
     def get_loaded_models_info():
