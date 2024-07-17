@@ -6,8 +6,6 @@ dist/
 .ipynb_checkpoints/
 .ruff_cache/
 
-/*.yml
-!/default_config.yml
 /bert/*/*.bin
 /bert/*/*.h5
 /bert/*/*.model

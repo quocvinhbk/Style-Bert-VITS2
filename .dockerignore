@@ -16,3 +16,4 @@
 !/initialize.py
 !/requirements.txt
 !/server_editor.py
+!/server_fastapi.py

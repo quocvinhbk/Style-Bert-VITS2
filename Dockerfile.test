@@ -1,0 +1,40 @@
+# Hugging face spaces (CPU) でエディタ (server_editor.py) のデプロイ用
+
+# See https://huggingface.co/docs/hub/spaces-sdks-docker-first-demo
+
+FROM python:3.11-slim
+
+RUN useradd -m -u 1000 user
+
+USER user
+
+ENV HOME=/home/user \
+    PATH=/home/user/.local/bin:$PATH
+
+WORKDIR $HOME/app
+
+RUN pip install --no-cache-dir --upgrade pip
+
+# COPY --chown=user . $HOME/app
+RUN chown -R user:1000 $HOME/app
+
+COPY --chown=user requirements.txt $HOME/app/requirements.txt
+RUN pip install --no-cache-dir -r $HOME/app/requirements.txt
+
+COPY --chown=user:user . .
+
+RUN mkdir -p $HOME/.cache
+
+ARG API_PORT
+EXPOSE $API_PORT
+
+ARG WEB_UI_PORT
+EXPOSE $WEB_UI_PORT
+
+# ENTRYPOINT ["tail", "-f", "/dev/null"]
+
+# 必要に応じて制限を変更してください
+# python server_editor.py --line_length 50 --line_count 3 --skip_static_files
+# CMD ["python", "server_editor.py", "--line_length", "50", "--line_count", "3"]
+
+CMD ["python", "server_fastapi.py"]

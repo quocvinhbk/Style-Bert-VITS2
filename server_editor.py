@@ -441,8 +441,8 @@ def delete_user_dict_word(uuid: str):
 app.include_router(router, prefix="/api")
 
 if __name__ == "__main__":
-    if not skip_static_files:
-        download_static_files("litagin02", "Style-Bert-VITS2-Editor", "out.zip")
+    # if not skip_static_files:
+    download_static_files("litagin02", "Style-Bert-VITS2-Editor", "out.zip")
     app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
     if args.inbrowser:
         webbrowser.open(f"http://localhost:{port}")

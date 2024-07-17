@@ -55,10 +55,10 @@ update_dict()
 ## ここでロードしなくても必要になった際に自動ロードされるが、時間がかかるため事前にロードしておいた方が体験が良い
 bert_models.load_model(Languages.JP)
 bert_models.load_tokenizer(Languages.JP)
-bert_models.load_model(Languages.EN)
-bert_models.load_tokenizer(Languages.EN)
-bert_models.load_model(Languages.ZH)
-bert_models.load_tokenizer(Languages.ZH)
+# bert_models.load_model(Languages.EN)
+# bert_models.load_tokenizer(Languages.EN)
+# bert_models.load_model(Languages.ZH)
+# bert_models.load_tokenizer(Languages.ZH)
 
 
 def raise_validation_error(msg: str, param: str):
@@ -204,7 +204,11 @@ if __name__ == "__main__":
 
         if model_name:
             # load_models() の 処理内容が i の正当性を担保していることに注意
-            model_ids = [i for i, x in enumerate(model_holder.models_info) if x.name == model_name]
+            model_ids = [
+                i
+                for i, x in enumerate(model_holder.models_info)
+                if x.name == model_name
+            ]
             if not model_ids:
                 raise_validation_error(
                     f"model_name={model_name} not found", "model_name"
@@ -215,7 +219,7 @@ if __name__ == "__main__":
                     f"model_name={model_name} is ambiguous", "model_name"
                 )
             model_id = model_ids[0]
-            
+
         model = loaded_models[model_id]
         if speaker_name is None:
             if speaker_id not in model.id2spk.keys():
