@@ -33,6 +33,7 @@ from style_bert_vits2.constants import (
     DEFAULT_STYLE_WEIGHT,
     DEFAULT_OUTPUT_FORMAT,
     DEFAULT_OUTPUT_FORMAT_DICT,
+    DEFAULT_SAMPLING_RATE,
     Languages,
 )
 from style_bert_vits2.logging import logger
@@ -263,7 +264,7 @@ if __name__ == "__main__":
         )
         logger.success("Audio data generated and sent successfully")
         with BytesIO() as wavContent:
-            wavfile.write(wavContent, sr, audio)
+            wavfile.write(wavContent, DEFAULT_SAMPLING_RATE, audio)
             return Response(
                 content=wavContent.getvalue(),
                 media_type=DEFAULT_OUTPUT_FORMAT_DICT[output_format],

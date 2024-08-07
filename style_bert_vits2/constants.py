@@ -54,3 +54,4 @@ DEFAULT_OUTPUT_FORMAT_DICT = {
     "mp3": "audio/mp3",
     "ogg_vorbis": "audio/ogg",
 }
+DEFAULT_SAMPLING_RATE = 16000
