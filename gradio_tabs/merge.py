@@ -789,7 +789,7 @@ def simple_tts(
     config_path = assets_root / model_name / "config.json"
     style_vec_path = assets_root / model_name / "style_vectors.npy"
 
-    model = TTSModel(model_path, config_path, style_vec_path, device)
+    model = TTSModel(model_path, config_path, style_vec_path, device, model_name)
 
     return (
         "Success: 音声を生成しました。",

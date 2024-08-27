@@ -3,13 +3,10 @@ services:
   app:
     build:
       context: .
-      platforms:
-        - 'linux/amd64'
-      dockerfile: Dockerfile.test
+      dockerfile: Dockerfile.deploy-api
       args:
         API_PORT: 8000
         WEB_UI_PORT: 5000
     ports:
       - 8000:8000
-      - 5005:5000
-    # command: python server_fastapi.py
+      - 5000:5000

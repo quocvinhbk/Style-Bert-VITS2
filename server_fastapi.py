@@ -88,6 +88,7 @@ def load_models(model_holder: TTSModelHolder):
             config_path=model_holder.root_dir / model_name / "config.json",
             style_vec_path=model_holder.root_dir / model_name / "style_vectors.npy",
             device=model_holder.device,
+            name=model_name,
         )
         # 起動時に全てのモデルを読み込むのは時間がかかりメモリを食うのでやめる
         # model.load()
@@ -192,6 +193,9 @@ if __name__ == "__main__":
         reference_audio_path: Optional[str] = Query(
             None, description="スタイルを音声ファイルで行う"
         ),
+        output_sampling_rate: int = Query(
+            DEFAULT_SAMPLING_RATE, description="目标采样率"
+        ),
     ):
         """Infer text to speech(テキストから感情付き音声を生成する)"""
         logger.info(
@@ -264,7 +268,7 @@ if __name__ == "__main__":
         )
         logger.success("Audio data generated and sent successfully")
         with BytesIO() as wavContent:
-            wavfile.write(wavContent, DEFAULT_SAMPLING_RATE, audio)
+            wavfile.write(wavContent, output_sampling_rate, audio)
             return Response(
                 content=wavContent.getvalue(),
                 media_type=DEFAULT_OUTPUT_FORMAT_DICT[output_format],
@@ -274,17 +278,15 @@ if __name__ == "__main__":
     def get_loaded_models_info():
         """ロードされたモデル情報の取得"""
 
-        result: dict[str, dict[str, Any]] = dict()
-        for model_id, model in enumerate(loaded_models):
-            result[str(model_id)] = {
-                "config_path": model.config_path,
-                "model_path": model.model_path,
-                "device": model.device,
-                "spk2id": model.spk2id,
-                "id2spk": model.id2spk,
-                "style2id": model.style2id,
+        models = []
+        for model_id, tts_model in enumerate(loaded_models):
+            model_data = {
+                "model_id": model_id,
+                "model_name": tts_model.name,
+                "style": list(tts_model.style2id.keys()),
             }
-        return result
+            models.append(model_data)
+        return {"data": models}
 
     @app.post("/models/refresh")
     def refresh():

@@ -1,0 +1,40 @@
+FROM nvidia/cuda:12.5.1-cudnn-runtime-ubuntu20.04
+
+ENV BUILD_PACKAGES git curl wget bash zsh nano vim tmux tree htop locales tzdata powerline fonts-powerline \
+                   sudo systemd build-essential libssl-dev zlib1g-dev libbz2-dev \
+                   libreadline-dev libsqlite3-dev wget llvm libncursesw5-dev xz-utils \
+                   tk-dev libffi-dev liblzma-dev libncurses5-dev make
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=Asia/Tokyo
+
+RUN echo $TZ > /etc/timezone && \
+    apt-get update && apt-get -y upgrade && apt-get install -y $BUILD_PACKAGES && \
+    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && dpkg-reconfigure -f $DEBIAN_FRONTEND tzdata && \
+    rm -rf /var/lib/apt/lists/* && rm -rf /var/cache/apt/* && apt-get clean
+
+ENV PYTHON_VERSION=3.11.4
+ENV PATH=/root/.pyenv/shims:/root/.pyenv/bin:$PATH
+RUN set -ex \
+    && curl https://pyenv.run | bash \
+    && pyenv update \
+    && pyenv install $PYTHON_VERSION \
+    && pyenv global $PYTHON_VERSION \
+    && pyenv rehash
+
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --upgrade pip
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+
+ENV WORKSPACE=/var/workspace
+WORKDIR $WORKSPACE
+
+COPY ./ ./
+
+ARG API_PORT
+EXPOSE $API_PORT
+
+ARG WEB_UI_PORT
+EXPOSE $WEB_UI_PORT
+
+CMD ["python", "server_fastapi.py"]

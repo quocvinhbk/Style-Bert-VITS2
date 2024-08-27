@@ -47,6 +47,7 @@ class TTSModel:
         config_path: Union[Path, HyperParameters],
         style_vec_path: Union[Path, NDArray[Any]],
         device: str,
+        name: str = "",
     ) -> None:
         """
         Style-Bert-Vits2 の音声合成モデルを初期化する。
@@ -61,6 +62,7 @@ class TTSModel:
 
         self.model_path: Path = model_path
         self.device: str = device
+        self.name: str = name
 
         # ハイパーパラメータの Pydantic モデルが直接指定された
         if isinstance(config_path, HyperParameters):
@@ -442,6 +444,7 @@ class TTSModelHolder:
                 config_path=self.root_dir / model_name / "config.json",
                 style_vec_path=self.root_dir / model_name / "style_vectors.npy",
                 device=self.device,
+                name=model_name,
             )
 
         return self.current_model
@@ -471,6 +474,7 @@ class TTSModelHolder:
             config_path=self.root_dir / model_name / "config.json",
             style_vec_path=self.root_dir / model_name / "style_vectors.npy",
             device=self.device,
+            name=model_name,
         )
         speakers = list(self.current_model.spk2id.keys())
         styles = list(self.current_model.style2id.keys())
