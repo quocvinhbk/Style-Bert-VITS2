@@ -295,21 +295,27 @@ if __name__ == "__main__":
             if max_val > 0:
                 audio_float32 /= max_val
             # Write audio data
-            if output_format in ["wav", "ogg"]:
-                sf.write(
-                    audio_content,
-                    audio_float32,
-                    output_sampling_rate,
-                    format=output_format,
-                    subtype="PCM_16" if output_format == "wav" else "vorbis",
-                )
-            else:
-                raise ValueError(f"Unsupported output format: {output_format}")
-
-            return Response(
-                content=audio_content.getvalue(),
-                media_type=DEFAULT_OUTPUT_FORMAT_DICT[output_format],
+            sf.write(
+                audio_content,
+                audio_float32,
+                output_sampling_rate,
+                format=output_format,
+                subtype="PCM_16" if output_format == "wav" else "vorbis",
             )
+            base64_encoded_audio = base64.b64encode(audio_content.read()).decode(
+                "utf-8"
+            )
+
+            # Create the JSON response
+            response_data = {"audio": base64_encoded_audio}
+            return Response(
+                content=json.dumps(response_data), media_type="application/json"
+            )
+
+            # return Response(
+            #     content=audio_content.getvalue(),
+            #     media_type=DEFAULT_OUTPUT_FORMAT_DICT[output_format],
+            # )
 
     @app.get("/models/info")
     def get_loaded_models_info():

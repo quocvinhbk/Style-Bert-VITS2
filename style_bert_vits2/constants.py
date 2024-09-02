@@ -48,10 +48,10 @@ DEFAULT_ASSIST_TEXT_WEIGHT = 1.0
 GRADIO_THEME = "NoCrypt/miku"
 
 # Output format
-DEFAULT_OUTPUT_FORMAT = "ogg_vorbis"
+DEFAULT_OUTPUT_FORMAT = "ogg"
 DEFAULT_OUTPUT_FORMAT_DICT = {
     "wav": "audio/wav",
     "mp3": "audio/mp3",
-    "ogg_vorbis": "audio/ogg",
+    "ogg": "audio/ogg",
 }
 DEFAULT_SAMPLING_RATE = 16000
