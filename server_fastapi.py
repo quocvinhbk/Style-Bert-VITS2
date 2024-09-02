@@ -11,6 +11,9 @@ from pathlib import Path
 from typing import Any, Optional
 from urllib.parse import unquote
 
+import json
+import base64
+
 import GPUtil
 import psutil
 import torch
@@ -19,6 +22,7 @@ from fastapi import FastAPI, HTTPException, Query, Request, status, Body, Depend
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
 from scipy.io import wavfile
+
 
 from pydantic import BaseModel
 
@@ -278,9 +282,13 @@ if __name__ == "__main__":
         logger.success("Audio data generated and sent successfully")
         with BytesIO() as wavContent:
             wavfile.write(wavContent, output_sampling_rate, audio)
+            wavContent.seek(0)  # Move the cursor to the beginning of the BytesIO object
+            base64_encoded_audio = base64.b64encode(wavContent.read()).decode("utf-8")
+
+            # Create the JSON response
+            response_data = {"audio": base64_encoded_audio}
             return Response(
-                content=wavContent.getvalue(),
-                media_type=DEFAULT_OUTPUT_FORMAT_DICT[output_format],
+                content=json.dumps(response_data), media_type="application/json"
             )
 
     @app.get("/models/info")
