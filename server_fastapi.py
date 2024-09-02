@@ -15,10 +15,12 @@ import GPUtil
 import psutil
 import torch
 import uvicorn
-from fastapi import FastAPI, HTTPException, Query, Request, status
+from fastapi import FastAPI, HTTPException, Query, Request, status, Body, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
 from scipy.io import wavfile
+
+from pydantic import BaseModel
 
 from config import get_config
 from style_bert_vits2.constants import (
@@ -74,6 +76,14 @@ def raise_validation_error(msg: str, param: str):
 
 class AudioResponse(Response):
     media_type = "audio/wav"
+
+
+class VoiceRequest(BaseModel):
+    text: str = ""
+    model_id: Optional[int] = 0
+    style: Optional[str] = DEFAULT_STYLE
+    output_format: Optional[str] = DEFAULT_OUTPUT_FORMAT
+    output_sampling_rate: Optional[int] = DEFAULT_SAMPLING_RATE
 
 
 loaded_models: list[TTSModel] = []
@@ -140,64 +150,63 @@ if __name__ == "__main__":
     # app.logger = logger
     # ↑効いていなさそう。loggerをどうやって上書きするかはよく分からなかった。
 
-    @app.api_route("/voice", methods=["GET", "POST"], response_class=AudioResponse)
-    async def voice(
+    def get_voice_params(
         request: Request,
-        text: str = Query(..., min_length=1, max_length=limit, description="セリフ"),
-        output_format: str = Query(DEFAULT_OUTPUT_FORMAT, description="output format"),
-        encoding: str = Query(None, description="textをURLデコードする(ex, `utf-8`)"),
-        model_name: str = Query(
-            None,
-            description="モデル名(model_idより優先)。model_assets内のディレクトリ名を指定",
-        ),
+        text: str = Query(None, min_length=1, max_length=100, description="セリフ"),
         model_id: int = Query(
             0, description="モデルID。`GET /models/info`のkeyの値を指定ください"
         ),
-        speaker_name: str = Query(
-            None,
-            description="話者名(speaker_idより優先)。esd.listの2列目の文字列を指定",
-        ),
-        speaker_id: int = Query(
-            0, description="話者ID。model_assets>[model]>config.json内のspk2idを確認"
-        ),
-        sdp_ratio: float = Query(
-            DEFAULT_SDP_RATIO,
-            description="SDP(Stochastic Duration Predictor)/DP混合比。比率が高くなるほどトーンのばらつきが大きくなる",
-        ),
-        noise: float = Query(
-            DEFAULT_NOISE,
-            description="サンプルノイズの割合。大きくするほどランダム性が高まる",
-        ),
-        noisew: float = Query(
-            DEFAULT_NOISEW,
-            description="SDPノイズ。大きくするほど発音の間隔にばらつきが出やすくなる",
-        ),
-        length: float = Query(
-            DEFAULT_LENGTH,
-            description="話速。基準は1で大きくするほど音声は長くなり読み上げが遅まる",
-        ),
-        language: Languages = Query(ln, description="textの言語"),
-        auto_split: bool = Query(DEFAULT_LINE_SPLIT, description="改行で分けて生成"),
-        split_interval: float = Query(
-            DEFAULT_SPLIT_INTERVAL, description="分けた場合に挟む無音の長さ（秒）"
-        ),
-        assist_text: Optional[str] = Query(
-            None,
-            description="このテキストの読み上げと似た声音・感情になりやすくなる。ただし抑揚やテンポ等が犠牲になる傾向がある",
-        ),
-        assist_text_weight: float = Query(
-            DEFAULT_ASSIST_TEXT_WEIGHT, description="assist_textの強さ"
-        ),
         style: Optional[str] = Query(DEFAULT_STYLE, description="スタイル"),
-        style_weight: float = Query(DEFAULT_STYLE_WEIGHT, description="スタイルの強さ"),
-        reference_audio_path: Optional[str] = Query(
-            None, description="スタイルを音声ファイルで行う"
-        ),
+        output_format: str = Query(DEFAULT_OUTPUT_FORMAT, description="output format"),
         output_sampling_rate: int = Query(
             DEFAULT_SAMPLING_RATE, description="目标采样率"
         ),
+        body: VoiceRequest = Body(None),
     ):
+        if body is not None:
+            return {
+                "request": request,
+                "text": body.text,
+                "model_id": body.model_id,
+                "style": body.style,
+                "output_format": body.output_format,
+                "output_sampling_rate": body.output_sampling_rate,
+            }
+        else:
+            return {
+                "request": request,
+                "text": text,
+                "model_id": model_id,
+                "style": style,
+                "output_format": output_format,
+                "output_sampling_rate": output_sampling_rate,
+            }
+
+    @app.api_route("/voice", methods=["GET", "POST"], response_class=AudioResponse)
+    async def voice(params: dict = Depends(get_voice_params)):
         """Infer text to speech(テキストから感情付き音声を生成する)"""
+        request = params["request"]
+        text = params["text"]
+        model_id = params["model_id"]
+        style = params["style"]
+        output_format = params["output_format"]
+        output_sampling_rate = params["output_sampling_rate"]
+        model_name: str = None
+        speaker_name: str = None
+        speaker_id: int = 0
+        sdp_ratio: float = DEFAULT_SDP_RATIO
+        noise: float = DEFAULT_NOISE
+        noisew: float = DEFAULT_NOISEW
+        length: float = DEFAULT_LENGTH
+        language: Languages = ln
+        auto_split: bool = DEFAULT_LINE_SPLIT
+        split_interval: float = DEFAULT_SPLIT_INTERVAL
+        assist_text: Optional[str] = None
+        assist_text_weight: float = DEFAULT_ASSIST_TEXT_WEIGHT
+        style_weight: float = DEFAULT_STYLE_WEIGHT
+        reference_audio_path: Optional[str] = None
+        encoding: str = "utf-8"
+
         logger.info(
             f"{request.client.host}:{request.client.port}/voice  { unquote(str(request.query_params) )}"
         )
