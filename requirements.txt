@@ -23,3 +23,5 @@ torch
 torchaudio
 transformers
 umap-learn
+scipy
+soundfile

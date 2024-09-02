@@ -22,6 +22,9 @@ from fastapi import FastAPI, HTTPException, Query, Request, status, Body, Depend
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
 from scipy.io import wavfile
+import numpy as np
+import soundfile as sf
+from scipy import signal
 
 
 from pydantic import BaseModel
@@ -47,7 +50,6 @@ from style_bert_vits2.nlp import bert_models
 from style_bert_vits2.nlp.japanese import pyopenjtalk_worker as pyopenjtalk
 from style_bert_vits2.nlp.japanese.user_dict import update_dict
 from style_bert_vits2.tts_model import TTSModel, TTSModelHolder
-
 
 config = get_config()
 ln = config.server_config.language
@@ -280,15 +282,33 @@ if __name__ == "__main__":
             style_weight=style_weight,
         )
         logger.success("Audio data generated and sent successfully")
-        with BytesIO() as wavContent:
-            wavfile.write(wavContent, output_sampling_rate, audio)
-            wavContent.seek(0)  # Move the cursor to the beginning of the BytesIO object
-            base64_encoded_audio = base64.b64encode(wavContent.read()).decode("utf-8")
 
-            # Create the JSON response
-            response_data = {"audio": base64_encoded_audio}
+        if output_sampling_rate != sr:
+            number_of_samples = round(len(audio) * float(output_sampling_rate) / sr)
+            audio = signal.resample(audio, number_of_samples)
+
+        with BytesIO() as audio_content:
+            # Convert audio to float32 for soundfile
+            audio_float32 = audio.astype(np.float32)
+            # Normalize based on the actual range of the audio
+            max_val = np.max(np.abs(audio_float32))
+            if max_val > 0:
+                audio_float32 /= max_val
+            # Write audio data
+            if output_format in ["wav", "ogg"]:
+                sf.write(
+                    audio_content,
+                    audio_float32,
+                    output_sampling_rate,
+                    format=output_format,
+                    subtype="PCM_16" if output_format == "wav" else "vorbis",
+                )
+            else:
+                raise ValueError(f"Unsupported output format: {output_format}")
+
             return Response(
-                content=json.dumps(response_data), media_type="application/json"
+                content=audio_content.getvalue(),
+                media_type=DEFAULT_OUTPUT_FORMAT_DICT[output_format],
             )
 
     @app.get("/models/info")
