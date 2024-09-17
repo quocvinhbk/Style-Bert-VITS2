@@ -12,6 +12,8 @@ dist/
 /bert/*/*.safetensors
 /bert/*/*.msgpack
 
+model_assets/
+
 /configs/paths.yml
 
 /pretrained/*.safetensors
